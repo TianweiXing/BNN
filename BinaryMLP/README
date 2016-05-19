@@ -1,0 +1,15 @@
+README
+
+To run:
+gcc main.c BinaryMLP.c math-binary.c -o main.o -lm
+./main.o
+
+
+Details:
+
+main.c contains the code for creating the MLP network, generating random input, training and evaluating result.
+math-binary.c contains the code for some math functions and binarization process.
+BinaryMLP.c contains the code for creating net, updating output, backpropagation, batch training, load/save net, etc.
+
+
+
