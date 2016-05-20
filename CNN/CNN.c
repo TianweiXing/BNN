@@ -225,15 +225,15 @@ void MaxPooling(int pool_size){
                     for (int n=0; n<pool_size; n++){
                         pooled_array[m*pool_size+n]=ImageMap.mapping_values[i][pool_size*j+m][pool_size*k+n];
 
-                        printf("%.f ",pooled_array[m*pool_size+n]);
+                        // printf("%.f ",pooled_array[m*pool_size+n]);
                     }
                 }
                 
                 // do max pooling and get new pixel number
                 pooled_image[j][k]=MaxNum(pooled_array, pool_size * pool_size);
 
-                printf("\t %.f %d %d ",pooled_image[j][k], j, k);
-                printf("\n");
+                // printf("\t %.f %d %d ",pooled_image[j][k], j, k);
+                // printf("\n");
 
                 // update image_map mapping values
                 ImageMap.mapping_values[i][j][k]=pooled_image[j][k];
@@ -392,6 +392,30 @@ int main(){
 
 
     
+    // example of creating kernels, loading kernels, convolution, maxpooling and Nonlinear activation;
+    struct conv_kernel conv_128_1[128];
+
+    for(int i=0; i<128; i++){
+        conv_128_1[i].kernel_dim=3;
+        conv_128_1[i]=LoadKernel(conv_128_1[i], 1);
+
+        for(int j=0; j<conv_128_1[i].kernel_dim; j++){
+            for(int k=0; k<conv_128_1[i].kernel_dim; k++){
+                // printf("%f\t",conv_128_1[i].kernel_para[j][k]);
+            }
+            // printf("\n");
+        }
+        // printf("\n\n");
+    }
+
+    Conv2DLayer(conv_128_1, 128, 1);
+    printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
+    printf("\n");
+
+    MaxPooling(2);
+    printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
+
+    ActivationLayer('t');
 
 
 
