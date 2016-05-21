@@ -287,7 +287,114 @@ void ActivationLayer(char activation, int binary=0){
 void BatchNormLayer(){
 }
 
-void DenseLayer(char activation, int binary=0){
+
+// use a static struct for fully connected layers
+#define MAX_NEURON_NUM 10000
+
+static struct NNLayer_list {
+    int valid_list_index;
+    double list_values[MAX_NEURON_NUM];
+}NNLayer;
+
+
+// function for resize of 3D array to 1D array
+// transfer the valid values from ImageMap to NNLayer
+void ResizeMapping2List(){
+
+    // the dimension change
+    int dim1=ImageMap.valid_dim_1;
+    int dim2=ImageMap.valid_dim_2;
+    int dim3=ImageMap.valid_dim_3;
+    int list_dimension=dim1*dim2*dim3;
+
+    NNLayer.valid_list_index = list_dimension;
+
+    int i, j, k;
+    int index = 0;
+    for (i=0; i<dim1; i++){
+        for (j=0; j<dim2; j++){
+            for (k=0; k<dim3; k++){
+
+                NNLayer.list_values[index] = ImageMap.mapping_values[i][j][k];
+                index = index +1;
+            }
+        }
+    }
+
+    if (index != list_dimension){
+        printf("ResizeMapping2List went wrong!\n");
+    }
+
+}
+
+
+// // function for load denseLayer weights parameters 
+// // use random generated initial parameters: set ifRand=1 (by default)
+// double LoadWeight(double weight_list[], int input_num, int output_num, int init_weight=1 ){
+//     // to set the weight values from txt parameter files 
+//     // exported from python CNN model
+
+
+//     int i, j;
+//     if(init_kernel){
+
+//         // set the random values for every kernel
+//         set_kernel=input_kernel;
+//         // i is the kernel row            
+//         for(i=0; i<set_kernel.kernel_dim; i++){
+//             // j is the kernel col
+//             for(j=0; j<set_kernel.kernel_dim; j++){
+//                     set_kernel.kernel_para[i][j]=getRand();
+//             }
+//         }
+
+//     }
+//     return set_kernel;
+// }
+
+
+// function for creating a fully connected layer(dense layer)
+// change / update the denseLayer after add-mutiplication
+void DenseLayer(int output_node_num,  int binary=0, int init_weight=1){
+
+    int input_node_num;
+    input_node_num = NNLayer.valid_list_index;
+    double weight_array[output_node_num][input_node_num];
+
+    // load weight parameters from file
+    int i, j;
+    if (init_weight){
+
+        for (i=0; i<output_node_num; i++){
+            for (j=0; j<input_node_num; j++){
+
+                weight_array[i][j] = 1;
+            }
+        }
+    }
+
+    // creating a new list to store the output
+    double output_values[output_node_num];
+
+    // calculating the weighted sum value
+    for (i=0; i<output_node_num; i++){
+
+        int weighted_sum =0;
+        for (j=0; j<input_node_num; j++){
+
+            weighted_sum = weighted_sum + NNLayer.list_values[j] * weight_array[i][j];
+        }
+
+        output_values[i] = weighted_sum;
+    }
+
+    // store output_values to NNLayer
+    NNLayer.valid_list_index = output_node_num;
+
+    for (i=0; i<output_node_num; i++){
+
+        NNLayer.list_values[i] = output_values[i];
+    }
 }
 
 
