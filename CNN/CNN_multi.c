@@ -88,7 +88,7 @@ static struct image_map {
     int valid_dim_2;
     int valid_dim_3;
     double mapping_values[MAX_DIMENSION_1][MAX_DIMENSION_2][MAX_DIMENSION_3];
-}ImageMap;
+}ImageMap[IMAGE_NUM];
 
 // initialization for ImageMap in the Main function
 
@@ -404,53 +404,53 @@ void DenseLayer(int output_node_num,  int binary=0, int init_weight=1){
 
 int main(){
 
-   // read cifar data from binary file
+    // the number of input images
+    int input_number = IMAGE_NUM;
 
-    unsigned char buffer[3073];
+    unsigned char buffer[3073*input_number];
     FILE *ptr;
 
     ptr = fopen("data_batch_1.bin","rb");  // r for read, b for binary
-    // int aaa;
-    // aaa=sizeof(buffer);
-    // printf("%d\n",aaa);
 
-    fread(buffer,sizeof(buffer),1,ptr); // read 10 bytes to our buffer
-
-    //You said you can read it, but it's not outputting correctly... 
-    // keep in mind that when you "output" this data, you're not reading ASCII, 
-    //so it's not like printing a string to the screen:
-    for(int i = 0; i<3073; i++)
-    {
-        // printf("%u ", buffer[i]); // prints a series of bytes
-    }
-    fclose(ptr);
-
-    // save cifar data to image structure
-    struct cifar_img img_eg;
-    img_eg.label_img=buffer[0];
-    // printf("%u\n",buffer[0]);
-    printf("the label of example image is :%d\n",img_eg.label_img);
     
-    unsigned char zero='0';
-    int temp_pixel;
+    // fread(buffer,sizeof(buffer),1,ptr); // read 10 bytes to our buffer
+    fread(buffer,3073,input_number,ptr);
 
-    for(int dim=0; dim<IMAGE_DIMENSION; dim++)
-    {
-        for(int i=0; i<IMAGE_ROW; i++)
-        {
-            for(int j=0; j<IMAGE_COL; j++)
+    // for(int i = 0; i<3073; i++)
+    // {
+    //     // printf("%u ", buffer[i]); // prints a series of bytes
+    // }
+    // fclose(ptr);
+
+    struct cifar_img img_eg[input_number];
+    int i;
+    for (i=0; i<input_number; i++){
+        img_eg[i].label_img=buffer[i*3073];
+        printf("%u\n",buffer[i*3073]);
+        printf("the label of this example image is :%d\n",img_eg[i].label_img);
+
+        int dim, m, n;
+        double temp_pixel;
+        unsigned char zero='0';
+
+        for(int dim=0; dim<IMAGE_DIMENSION; dim++)
+       {
+            for(int m=0; m<IMAGE_ROW; m++)
             {
-                // save values from binary to image struct
-                temp_pixel=buffer[ dim*1024 + 32*i +j + 1]-zero + 48;
-                img_eg.pixel_img[dim][i][j]=temp_pixel;
-                // print image to the terminal
-                // printf("%.f\t",img_eg.pixel_img[dim][i][j]);
+                for(int n=0; n<IMAGE_COL; n++)
+                {
+                    // save values from binary to image struct
+                    temp_pixel=buffer[ i*3073 + dim*1024 + 32*m +n + 1]-zero + 48;
+                    img_eg[i].pixel_img[dim][m][n]=temp_pixel;
+                    // print image to the terminal
+                    printf("%.f\t",img_eg[i].pixel_img[dim][m][n]);
+                }
+                printf("\n");
+
             }
-            // printf("\n");
+            printf("\n\n");
 
         }
-
-        // printf("\n\n");
 
     }
 
@@ -483,18 +483,22 @@ int main(){
     
 
     // for start,the image_map is just the cifar10-image
-    for (int i=0; i<IMAGE_DIMENSION; i++){
-        for (int j=0; j<IMAGE_ROW; j++){
-            for(int k=0; k<IMAGE_COL; k++){
-                ImageMap.mapping_values[i][j][k]=img_eg.pixel_img[i][j][k];
+    for (int h=0; h<IMAGE_NUM; h++){
+
+
+        for (int i=0; i<IMAGE_DIMENSION; i++){
+            for (int j=0; j<IMAGE_ROW; j++){
+                for(int k=0; k<IMAGE_COL; k++){
+                    ImageMap[h].mapping_values[i][j][k]=img_eg[h].pixel_img[i][j][k];
+                }
             }
         }
+
+        ImageMap[h].valid_dim_1=IMAGE_DIMENSION;
+        ImageMap[h].valid_dim_2=IMAGE_ROW;
+        ImageMap[h].valid_dim_3=IMAGE_COL;
+
     }
-
-
-    ImageMap.valid_dim_1=IMAGE_DIMENSION;
-    ImageMap.valid_dim_2=IMAGE_ROW;
-    ImageMap.valid_dim_3=IMAGE_COL;
 
     // test conv2d layer
     // kernel_numuber=2;
@@ -522,13 +526,11 @@ int main(){
     printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
     printf("\n");
 
-    ActivationLayer('t');
-
-
     MaxPooling(2);
     printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
 
-    
+    ActivationLayer('t');
+
 
 
 
