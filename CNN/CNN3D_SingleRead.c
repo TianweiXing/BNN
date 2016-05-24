@@ -649,7 +649,7 @@ int main(){
 
 
     DenseLayer(10);
-    printf("Fully Connected Layer with 1024 neurons, the size of NeuralNet-Layer is :\n");
+    printf("Fully Connected Layer with 10 neurons, the size of NeuralNet-Layer is :\n");
     printf("%d",NNLayer.valid_list_index);
     printf("\n");
 
@@ -690,6 +690,6 @@ int main(){
 // 1024
 // Fully Connected Layer with 1024 neurons, the size of NeuralNet-Layer is :
 // 1024
-// Fully Connected Layer with 1024 neurons, the size of NeuralNet-Layer is :
+// Fully Connected Layer with 10 neurons, the size of NeuralNet-Layer is :
 // 10
 // [Finished in 6.6s]
