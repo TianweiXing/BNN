@@ -9,6 +9,8 @@
 #include <math.h>
 #include <time.h>
 
+// 
+#define EPSILON 1e-4
 
 // define input images numbers
 #define IMAGE_NUM 4
@@ -56,6 +58,16 @@ float getRand(){
     return (( (float)rand() * 2 ) / ( (float)RAND_MAX + 1 ) ) - 1;
 }
 
+
+// use a static struct for fully connected layers
+#define MAX_NEURON_NUM 10000
+
+static struct NNLayer_list {
+    int valid_list_index;
+    float list_values[MAX_NEURON_NUM];
+}NNLayer;
+
+
 // function for load kernel parameters 
 // use random generated initial parameters: set ifRand=1 (by default)
 struct conv_kernel LoadKernel(int ker_size, int ker_depth, int init_kernel=1 ){
@@ -65,7 +77,6 @@ struct conv_kernel LoadKernel(int ker_size, int ker_depth, int init_kernel=1 ){
     struct conv_kernel set_kernel;
     set_kernel.kernel_dim = ker_size;
     set_kernel.kernel_depth=ker_depth;
-
 
     int h, i, j;
     if(init_kernel){
@@ -81,13 +92,20 @@ struct conv_kernel LoadKernel(int ker_size, int ker_depth, int init_kernel=1 ){
                         // printf("%f\t",set_kernel.kernel_para[h][i][j]);
                 }
             }
-
         }
-
     }
     return set_kernel;
 }
 
+
+// function for loading bias (both for convolution and for weights)
+float LoadBias(int init_bias=1){
+	float bias;
+	if (init_bias){
+		bias=getRand();
+	}	
+	return bias;
+}
 
 
 
@@ -107,7 +125,7 @@ static struct image_map {
 
 
 // Function for convolutional operation
-double ConvolutionFunc(struct conv_kernel input_kernel, struct img_patch image_patch){
+double ConvolutionFunc(struct conv_kernel input_kernel, float conv_bias, struct img_patch image_patch){
     int kernel_size, kernel_dep;
     kernel_size=input_kernel.kernel_dim;
     kernel_dep=input_kernel.kernel_depth;
@@ -129,6 +147,8 @@ double ConvolutionFunc(struct conv_kernel input_kernel, struct img_patch image_p
             }
         }
     }
+
+    convolution_result = convolution_result+conv_bias;
 
     return convolution_result;
 }
@@ -160,10 +180,13 @@ void Conv2DLayer(int kernel_size, int num_kernel, int pad, int binary=0){
         // cannot store an array of this size in memory
         // so we read the parameters of a single kernel every time
         struct conv_kernel input_kernel;
+        float input_conv_bias;
         // input_kernel.kernel_dim = kernel_size;
         // input_kernel.kernel_depth = actual_dim1;
         input_kernel = LoadKernel(kernel_size, actual_dim1, 1);
-        // printf("%d\t%d\n",input_kernel.kernel_dim ,input_kernel.kernel_depth);
+        // load the convolution bias from file;
+        input_conv_bias = LoadBias();
+
 
 
         float image_slice[actual_dim1][actual_dim2][actual_dim3];
@@ -210,7 +233,7 @@ void Conv2DLayer(int kernel_size, int num_kernel, int pad, int binary=0){
                 }
 
                 // calculate the convolution for this window
-                result_image[k][l]= ConvolutionFunc(input_kernel, image_patch);
+                result_image[k][l]= ConvolutionFunc(input_kernel, input_conv_bias, image_patch);
                 // printf("%1.3f\t",result_image[k][l]);
             }
             // printf("\n");
@@ -321,17 +344,90 @@ void ActivationLayer(char activation, int binary=0){
 }
 
 
-void BatchNormLayer(){
+
+// function for batchnormalization layer
+// currently only consider forward propogation
+// consider batch size is 1
+void BatchNormLayer(int batch_size, int para_num, char Normalayer){
+
+	int i, j ,k;
+	float x, y;
+	float mean, variance;
+
+	// LoadBatchNormPara
+	// from saved files
+	float gamma[para_num];
+	float beta[para_num];
+	for (i=0; i<para_num; i++){
+		gamma[i]=getRand();
+		beta[i]=getRand();
+	}
+
+	if(Normalayer == 'C'){
+		// For CNN, different elements of the same feature map at different
+		// locations,  are  normalized in  the  same  way;
+		// we  jointly  normalize  all  the  activations  in  a  mini-batch, over all locations
+		// We learn a pair of parameters gamma & beta per feature map, rather than per activation
+		// During inference the BN transform applies the same linear
+		// transformation to each activation in a given feature map.
+
+		int dim1=ImageMap.valid_dim_1;
+		int dim2=ImageMap.valid_dim_2;
+		int dim3=ImageMap.valid_dim_3;
+
+	    for (i=0; i<dim1; i++){
+
+	    	// compute the mean of current feature map
+	    	int sum=0;
+	    	for (j=0; j<dim2; j++){
+	            for (k=0; k<dim3; k++){
+	            	sum = sum+ImageMap.mapping_values[i][j][k];
+	            }
+	        }
+	        mean = sum /(dim2 * dim3);
+
+	        // compute the variance of current feature map
+	        sum=0;
+	    	for (j=0; j<dim2; j++){
+	            for (k=0; k<dim3; k++){
+	            	sum = sum + pow((ImageMap.mapping_values[i][j][k] - mean), 2);
+	            }
+	        }
+	        variance = variance /(dim2 * dim3);
+
+	        // implement batch normalization (also linear transform)
+	        for (j=0; j<dim2; j++){
+	            for (k=0; k<dim3; k++){
+	            	x=ImageMap.mapping_values[i][j][k];
+
+	            	y = (x - mean)/(sqrt( variance + EPSILON )) * gamma[i] + beta[i];
+	            	ImageMap.mapping_values[i][j][k] = y;
+	            }
+	        }
+	    }
+	}
+	else if (Normalayer == 'F'){
+		int dim = NNLayer.valid_list_index;
+		for (i = 0; i<dim; i++){
+			x=NNLayer.list_values[i];
+
+			// for dense layer, if batch size is 1, then mean = x, variance =0
+			// implement batch normalization (also linear transform)
+		    if (batch_size == 1){
+        		mean = x;
+        		variance = 1;
+        	}
+
+        	y = (x - mean)/(sqrt( variance + EPSILON )) * gamma[i] + beta[i];
+        	NNLayer.list_values[i] = y;
+		}
+
+	}
+	else{
+		printf("Invalid Normalization!\n");
+	}
+    
 }
-
-
-// use a static struct for fully connected layers
-#define MAX_NEURON_NUM 10000
-
-static struct NNLayer_list {
-    int valid_list_index;
-    float list_values[MAX_NEURON_NUM];
-}NNLayer;
 
 
 // function for resize of 3D array to 1D array
@@ -427,7 +523,7 @@ void DenseLayer(int output_node_num,  int binary=0, int init_weight=1){
                 weight_array[j] = getRand();
             }
 
-            neuron_bias = getRand();
+            neuron_bias = LoadBias();
         }
 
 
@@ -523,7 +619,7 @@ int main(){
     
 //     // #######################################################################################
 //     // #######################################################################################
-//     // ###############################Start of Main program###################################
+//     // #############################  Start of Main program  #################################
 //     // #######################################################################################  
 //     // #######################################################################################
 
@@ -561,6 +657,8 @@ int main(){
     printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
     printf("\n");
 
+    BatchNormLayer(1, 128, 'C');
+
     ActivationLayer('t');
 
 
@@ -575,6 +673,8 @@ int main(){
     printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
     printf("\n");
 
+    BatchNormLayer(1, 128, 'C');
+
     ActivationLayer('t');
 
 
@@ -585,6 +685,8 @@ int main(){
     printf("2D Convolutional layer, with 256 3*3 kernels, the size of ImageMap is :\n");
     printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
     printf("\n");
+
+    BatchNormLayer(1, 256, 'C');
 
     ActivationLayer('t');
 
@@ -599,6 +701,8 @@ int main(){
     printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
     printf("\n");
 
+    BatchNormLayer(1, 256, 'C');
+
     ActivationLayer('t');
 
 
@@ -609,6 +713,8 @@ int main(){
     printf("2D Convolutional layer, with 512 3*3 kernels, the size of ImageMap is :\n");
     printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
     printf("\n");
+
+    BatchNormLayer(1, 512, 'C');
 
     ActivationLayer('t');
 
@@ -622,6 +728,8 @@ int main(){
     printf("Max-pooling layer, with 2*2 pooling size, the size of ImageMap is  :\n");
     printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
     printf("\n");
+
+    BatchNormLayer(1, 512, 'C');
 
     ActivationLayer('t');
 
@@ -641,17 +749,26 @@ int main(){
     printf("%d",NNLayer.valid_list_index);
     printf("\n");
 
+    BatchNormLayer(1, 1024, 'C');
+
+    ActivationLayer('t');
+
 
     DenseLayer(1024);
     printf("Fully Connected Layer with 1024 neurons, the size of NeuralNet-Layer is :\n");
     printf("%d",NNLayer.valid_list_index);
     printf("\n");
 
+    BatchNormLayer(1, 1024, 'C');
+
+    ActivationLayer('t');
+
 
     DenseLayer(10);
     printf("Fully Connected Layer with 10 neurons, the size of NeuralNet-Layer is :\n");
     printf("%d",NNLayer.valid_list_index);
     printf("\n");
+    BatchNormLayer(1, 10, 'F');
 
 
 
