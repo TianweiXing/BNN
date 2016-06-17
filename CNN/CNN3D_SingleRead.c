@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
-
+#pragma GCC diagnostic ignored "-Wwrite-strings"
 // 
 #define EPSILON 1e-4
 
@@ -56,6 +56,21 @@ float getRand(){
     // return (round( (float)rand()/RAND_MAX )*2-1);
     // real number setting:
     return (( (float)rand() * 2 ) / ( (float)RAND_MAX + 1 ) ) - 1;
+}
+
+static float ReadWeightVector[1024];  // created for saving bias/ mean/ var/ gamma/ beta, not for weights larger than 1024
+
+// read parameters from binary files
+int readWeights(char file_name[], int weight_length){
+    FILE *fp = fopen(file_name, "rb");
+
+    fread(&ReadWeightVector,sizeof(float)*weight_length, 1, fp);
+
+    fclose(fp);
+
+    printf("%.5f\n",ReadWeightVector[0]);
+
+    return 0;
 }
 
 
@@ -348,84 +363,135 @@ void ActivationLayer(char activation, int binary=0){
 // function for batchnormalization layer
 // currently only consider forward propogation
 // consider batch size is 1
-void BatchNormLayer(int batch_size, int para_num, char Normalayer){
+void BatchNormLayer(int para_num, char Normalayer, char beta_flie[], char gamma_flie[], char mean_flie[], char invstd_flie[]){
 
 	int i, j ,k;
 	float x, y;
-	float mean, variance;
 
 	// LoadBatchNormPara
 	// from saved files
-	float gamma[para_num];
 	float beta[para_num];
-	for (i=0; i<para_num; i++){
-		gamma[i]=getRand();
-		beta[i]=getRand();
+    float gamma[para_num];
+    float mean[para_num];
+    float inv_std[para_num];
+
+    // read beta parameters
+	readWeights( beta_flie,  para_num);
+    for (i=0; i<para_num; i++){
+		beta[i]=ReadWeightVector[i];
 	}
+    // read gamma parameters
+    readWeights( gamma_flie,  para_num);
+    for (i=0; i<para_num; i++){
+        gamma[i]=ReadWeightVector[i];
+    }
+    // read mean parameters
+    readWeights( mean_flie,  para_num);
+    for (i=0; i<para_num; i++){
+        mean[i]=ReadWeightVector[i];
+    }
+    // read invstd parameters
+    readWeights( invstd_flie,  para_num);
+    for (i=0; i<para_num; i++){
+        inv_std[i]=ReadWeightVector[i];
+    }
 
-	if(Normalayer == 'C'){
-		// For CNN, different elements of the same feature map at different
-		// locations,  are  normalized in  the  same  way;
-		// we  jointly  normalize  all  the  activations  in  a  mini-batch, over all locations
-		// We learn a pair of parameters gamma & beta per feature map, rather than per activation
-		// During inference the BN transform applies the same linear
-		// transformation to each activation in a given feature map.
 
-		int dim1=ImageMap.valid_dim_1;
-		int dim2=ImageMap.valid_dim_2;
-		int dim3=ImageMap.valid_dim_3;
 
-	    for (i=0; i<dim1; i++){
+    if(Normalayer == 'C'){
+        int dim1=ImageMap.valid_dim_1;
+        int dim2=ImageMap.valid_dim_2;
+        int dim3=ImageMap.valid_dim_3;
 
-	    	// compute the mean of current feature map
-	    	int sum=0;
-	    	for (j=0; j<dim2; j++){
-	            for (k=0; k<dim3; k++){
-	            	sum = sum+ImageMap.mapping_values[i][j][k];
-	            }
-	        }
-	        mean = sum /(dim2 * dim3);
+        for (i=0; i<dim1; i++){
+            for (j=0; j<dim2; j++){
+                for (k=0; k<dim3; k++){
+                    x=ImageMap.mapping_values[i][j][k];
+                    y = (x - mean[i]) * inv_std[i] * gamma[i] + beta[i];
+                    ImageMap.mapping_values[i][j][k] = y;
+                }
+            }
+        }
+    }
+    else if (Normalayer == 'F'){
+        int dim = NNLayer.valid_list_index;
 
-	        // compute the variance of current feature map
-	        sum=0;
-	    	for (j=0; j<dim2; j++){
-	            for (k=0; k<dim3; k++){
-	            	sum = sum + pow((ImageMap.mapping_values[i][j][k] - mean), 2);
-	            }
-	        }
-	        variance = variance /(dim2 * dim3);
+        for (i = 0; i<dim; i++){
+            x=NNLayer.list_values[i];
+            y = (x - mean[i]) * inv_std[i] * gamma[i] + beta[i];
+            NNLayer.list_values[i] = y;
+        }
 
-	        // implement batch normalization (also linear transform)
-	        for (j=0; j<dim2; j++){
-	            for (k=0; k<dim3; k++){
-	            	x=ImageMap.mapping_values[i][j][k];
+    }
+    else{
+        printf("Invalid Normalization!\n");
+    }
 
-	            	y = (x - mean)/(sqrt( variance + EPSILON )) * gamma[i] + beta[i];
-	            	ImageMap.mapping_values[i][j][k] = y;
-	            }
-	        }
-	    }
-	}
-	else if (Normalayer == 'F'){
-		int dim = NNLayer.valid_list_index;
-		for (i = 0; i<dim; i++){
-			x=NNLayer.list_values[i];
 
-			// for dense layer, if batch size is 1, then mean = x, variance =0
-			// implement batch normalization (also linear transform)
-		    if (batch_size == 1){
-        		mean = x;
-        		variance = 1;
-        	}
+// not for Lasagne use: 
+	// if(Normalayer == 'C'){
+	// 	// For CNN, different elements of the same feature map at different
+	// 	// locations,  are  normalized in  the  same  way;
+	// 	// we  jointly  normalize  all  the  activations  in  a  mini-batch, over all locations
+	// 	// We learn a pair of parameters gamma & beta per feature map, rather than per activation
+	// 	// During inference the BN transform applies the same linear
+	// 	// transformation to each activation in a given feature map.
 
-        	y = (x - mean)/(sqrt( variance + EPSILON )) * gamma[i] + beta[i];
-        	NNLayer.list_values[i] = y;
-		}
+	// 	int dim1=ImageMap.valid_dim_1;
+	// 	int dim2=ImageMap.valid_dim_2;
+	// 	int dim3=ImageMap.valid_dim_3;
 
-	}
-	else{
-		printf("Invalid Normalization!\n");
-	}
+	//     for (i=0; i<dim1; i++){
+
+	//     	// compute the mean of current feature map
+	//     	int sum=0;
+	//     	for (j=0; j<dim2; j++){
+	//             for (k=0; k<dim3; k++){
+	//             	sum = sum+ImageMap.mapping_values[i][j][k];
+	//             }
+	//         }
+	//         mean = sum /(dim2 * dim3);
+
+	//         // compute the variance of current feature map
+	//         sum=0;
+	//     	for (j=0; j<dim2; j++){
+	//             for (k=0; k<dim3; k++){
+	//             	sum = sum + pow((ImageMap.mapping_values[i][j][k] - mean), 2);
+	//             }
+	//         }
+	//         variance = variance /(dim2 * dim3);
+
+	//         // implement batch normalization (also linear transform)
+	//         for (j=0; j<dim2; j++){
+	//             for (k=0; k<dim3; k++){
+	//             	x=ImageMap.mapping_values[i][j][k];
+
+	//             	y = (x - mean)/(sqrt( variance + EPSILON )) * gamma[i] + beta[i];
+	//             	ImageMap.mapping_values[i][j][k] = y;
+	//             }
+	//         }
+	//     }
+	// }
+	// else if (Normalayer == 'F'){
+	// 	int dim = NNLayer.valid_list_index;
+	// 	for (i = 0; i<dim; i++){
+	// 		x=NNLayer.list_values[i];
+
+	// 		// for dense layer, if batch size is 1, then mean = x, variance =0
+	// 		// implement batch normalization (also linear transform)
+	// 	    if (batch_size == 1){
+ //        		mean = x;
+ //        		variance = 1;
+ //        	}
+
+ //        	y = (x - mean)/(sqrt( variance + EPSILON )) * gamma[i] + beta[i];
+ //        	NNLayer.list_values[i] = y;
+	// 	}
+
+	// }
+	// else{
+	// 	printf("Invalid Normalization!\n");
+	// }
     
 }
 
@@ -657,7 +723,9 @@ int main(){
     printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
     printf("\n");
 
-    BatchNormLayer(1, 128, 'C');
+    // BatchNormLayer(1, 128, 'C');
+    BatchNormLayer(128, 'C', "arr_2", "arr_3", "arr_4", "arr_5");
+    // BatchNormLayer(128, 'C', "arr_0", "arr_0", "arr_0", "arr_0");
 
     ActivationLayer('t');
 
@@ -673,7 +741,7 @@ int main(){
     printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
     printf("\n");
 
-    BatchNormLayer(1, 128, 'C');
+    BatchNormLayer( 128, 'C', "arr_8", "arr_9", "arr_10", "arr_11");
 
     ActivationLayer('t');
 
@@ -686,7 +754,7 @@ int main(){
     printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
     printf("\n");
 
-    BatchNormLayer(1, 256, 'C');
+    BatchNormLayer(256, 'C', "arr_14", "arr_15", "arr_16", "arr_17");
 
     ActivationLayer('t');
 
@@ -701,7 +769,7 @@ int main(){
     printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
     printf("\n");
 
-    BatchNormLayer(1, 256, 'C');
+    BatchNormLayer( 256, 'C', "arr_20", "arr_21", "arr_22", "arr_23");
 
     ActivationLayer('t');
 
@@ -714,7 +782,7 @@ int main(){
     printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
     printf("\n");
 
-    BatchNormLayer(1, 512, 'C');
+    BatchNormLayer(512, 'C', "arr_26", "arr_27", "arr_28", "arr_29");
 
     ActivationLayer('t');
 
@@ -729,7 +797,7 @@ int main(){
     printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
     printf("\n");
 
-    BatchNormLayer(1, 512, 'C');
+    BatchNormLayer( 512, 'C', "arr_32", "arr_33", "arr_34", "arr_35");
 
     ActivationLayer('t');
 
@@ -749,7 +817,7 @@ int main(){
     printf("%d",NNLayer.valid_list_index);
     printf("\n");
 
-    BatchNormLayer(1, 1024, 'C');
+    BatchNormLayer( 1024, 'F', "arr_38", "arr_39", "arr_40", "arr_41");
 
     ActivationLayer('t');
 
@@ -759,7 +827,7 @@ int main(){
     printf("%d",NNLayer.valid_list_index);
     printf("\n");
 
-    BatchNormLayer(1, 1024, 'C');
+    BatchNormLayer(1024, 'F', "arr_44", "arr_45", "arr_46", "arr_47");
 
     ActivationLayer('t');
 
@@ -768,7 +836,7 @@ int main(){
     printf("Fully Connected Layer with 10 neurons, the size of NeuralNet-Layer is :\n");
     printf("%d",NNLayer.valid_list_index);
     printf("\n");
-    BatchNormLayer(1, 10, 'F');
+    BatchNormLayer(10, 'F', "arr_50", "arr_51", "arr_52", "arr_53");
 
 
 
