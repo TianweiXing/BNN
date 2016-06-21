@@ -9,6 +9,36 @@
 #include <math.h>
 #include <time.h>
 #pragma GCC diagnostic ignored "-Wwrite-strings"
+
+
+// code for activation binarization function
+float min_value(float x, float y){
+    if(x<=y){
+        return x;
+    }
+    else{
+        return y;
+    }
+}
+float max_value(float x, float y){
+    if(x<=y){
+        return y;
+    }
+    else{
+        return x;
+    }
+}
+float binary_tanh_unit(float x){
+    float result;
+
+    float temp= (x+1)/2;
+    temp = min_value(temp, 1);
+    temp = max_value(temp, 0);
+    result= 2* round(temp) -1;
+
+    return result;
+}
+
 // 
 #define EPSILON 1e-4
 
@@ -357,16 +387,52 @@ void MaxPooling(int pool_size){
 
 
 // to implemet activation for every entry after convolution
-void ActivationLayer(char activation, int binary=0){
+void ActivationLayer(char layer_type,char activation, int binary=0){
 
-    for(int dim=0; dim<ImageMap.valid_dim_1; dim++)
-    {
-        for(int i=0; i<ImageMap.valid_dim_2; i++)
-        {
-            for(int j=0; j<ImageMap.valid_dim_3; j++)
+    switch (layer_type){
+
+        case 'c':
+            for(int dim=0; dim<ImageMap.valid_dim_1; dim++)
+            {
+                for(int i=0; i<ImageMap.valid_dim_2; i++)
+                {
+                    for(int j=0; j<ImageMap.valid_dim_3; j++)
+                    {   
+                        float temp;
+                        temp = ImageMap.mapping_values[dim][i][j];
+                        // for different activation
+                        // use binary activation in binary mode
+                        switch (activation){
+                            case 't': 
+                            // hyper tangent function 
+                                if (binary){
+                                    printf("write binary activation function here");
+                                    // ImageMap.mapping_values[dim][i][j]=( 2.0 / ( 1 + exp( temp ) ) ) - 1;
+                                    ImageMap.mapping_values[dim][i][j] = binary_tanh_unit(temp);
+
+                                }
+                                else{
+
+                                    // ImageMap.mapping_values[dim][i][j]=( 2.0 / ( 1 + exp( temp ) ) ) - 1;
+                                    // printf("%.5f",ImageMap.mapping_values[dim][i][j]);
+                                    ImageMap.mapping_values[dim][i][j] = binary_tanh_unit(temp);
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+
+                    }
+                }
+            }
+            break; 
+
+        case 'd':
+
+            for(int j=0; j<NNLayer.valid_list_index; j++)
             {   
                 float temp;
-                temp = ImageMap.mapping_values[dim][i][j];
+                temp = NNLayer.list_values[j];
                 // for different activation
                 // use binary activation in binary mode
                 switch (activation){
@@ -374,13 +440,10 @@ void ActivationLayer(char activation, int binary=0){
                     // hyper tangent function 
                         if (binary){
                             printf("write binary activation function here");
-                            ImageMap.mapping_values[dim][i][j]=( 2.0 / ( 1 + exp( temp ) ) ) - 1;
-
+                            NNLayer.list_values[j] = binary_tanh_unit(temp);
                         }
                         else{
-
-                            ImageMap.mapping_values[dim][i][j]=( 2.0 / ( 1 + exp( temp ) ) ) - 1;
-                            printf("%.5f",ImageMap.mapping_values[dim][i][j]);
+                            NNLayer.list_values[j] = binary_tanh_unit(temp);
                         }
                         break;
                     default:
@@ -388,8 +451,12 @@ void ActivationLayer(char activation, int binary=0){
                 }
 
             }
-        }
-    }
+            break;
+
+        default:
+            break;
+
+    }    
 }
 
 
@@ -658,12 +725,16 @@ void DenseLayer(int output_node_num, char weight_file[], char bias_file[]){
 
 int main(){
 
+
+    int img_position = 1;
    // read cifar data from binary file
 
     unsigned char buffer[3073];
     FILE *ptr;
 
-    ptr = fopen("data_batch_1.bin","rb");  // r for read, b for binary
+    ptr = fopen("test_batch.bin","rb");  // r for read, b for binary
+
+    fseek(ptr, sizeof(buffer)*(img_position-1),SEEK_CUR); // go to the position of specific image
 
     fread(buffer,sizeof(buffer),1,ptr); // read 10 bytes to our buffer
 
@@ -770,7 +841,26 @@ int main(){
     BatchNormLayer(128, 'C', "arr_2", "arr_3", "arr_4", "arr_5");
     // BatchNormLayer(128, 'C', "arr_0", "arr_0", "arr_0", "arr_0");
 
-    ActivationLayer('t');
+    ActivationLayer('c', 't');
+
+
+    //     for(int i=0; i<ImageMap.valid_dim_1; i++){
+    //     for(int j=0; j<ImageMap.valid_dim_2; j++){
+    //         for(int k=0; k<ImageMap.valid_dim_3; k++){
+    //             printf("%.2f\t", ImageMap.mapping_values[i][j][k]);
+    //         }
+    //         printf("\n");
+    //     }
+    //      printf("\n\n\n");
+    // }
+
+    // printf("%ld\n",sizeof(buffer));
+    // printf("%d\t",buffer[0]);
+    // printf("%u\t",buffer[0]);
+    // printf("%d\t",buffer[1]);
+    // printf("%u\t",buffer[1]);
+
+
 
 
 
@@ -786,7 +876,7 @@ int main(){
 
     BatchNormLayer( 128, 'C', "arr_8", "arr_9", "arr_10", "arr_11");
 
-    ActivationLayer('t');
+    ActivationLayer('c', 't');
 
 
     // # 256C3-256C3-P2   
@@ -799,7 +889,7 @@ int main(){
 
     BatchNormLayer(256, 'C', "arr_14", "arr_15", "arr_16", "arr_17");
 
-    ActivationLayer('t');
+    ActivationLayer('c', 't');
 
 
     Conv2DLayer(3, 256, 1,  "arr_18", "arr_19");
@@ -814,7 +904,7 @@ int main(){
 
     BatchNormLayer( 256, 'C', "arr_20", "arr_21", "arr_22", "arr_23");
 
-    ActivationLayer('t');
+    ActivationLayer('c', 't');
 
 
     // # 512C3-512C3-P2  
@@ -827,7 +917,7 @@ int main(){
 
     BatchNormLayer(512, 'C', "arr_26", "arr_27", "arr_28", "arr_29");
 
-    ActivationLayer('t');
+    ActivationLayer('c', 't');
 
 
     Conv2DLayer(3, 512, 1,  "arr_30", "arr_31");
@@ -842,7 +932,7 @@ int main(){
 
     BatchNormLayer( 512, 'C', "arr_32", "arr_33", "arr_34", "arr_35");
 
-    ActivationLayer('t');
+    ActivationLayer('c', 't');
 
 
 
@@ -864,7 +954,7 @@ int main(){
 
     BatchNormLayer( 1024, 'F', "arr_38", "arr_39", "arr_40", "arr_41");
 
-    ActivationLayer('t');
+    ActivationLayer('d', 't');
 
 
     DenseLayer(1024, "arr_42", "arr_43");
@@ -874,7 +964,7 @@ int main(){
 
     BatchNormLayer(1024, 'F', "arr_44", "arr_45", "arr_46", "arr_47");
 
-    ActivationLayer('t');
+    ActivationLayer('d','t');
 
 
     DenseLayer(10, "arr_48", "arr_49");
@@ -885,10 +975,16 @@ int main(){
 
 
     printf("\n\n\n");
+    int max_ind=1;
+    float max_value=NNLayer.list_values[0];
     for (int i=0; i<10; i++){
-        printf("%.5f", NNLayer.list_values[i]);
+        if(NNLayer.list_values[i] >max_value ){
+            max_ind = i+1;
+        }
+        printf("%.5f\t", NNLayer.list_values[i]);
     }
-    printf("%d\n",NNLayer.valid_list_index);
+    printf("\nthe estimated label is : %d \n", max_ind);
+    printf("the label of example image is :%d\n",img_eg.label_img);
 
     return 0;
 }
