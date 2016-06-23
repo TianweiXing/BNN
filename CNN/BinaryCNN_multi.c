@@ -10,7 +10,6 @@
 #include <time.h>
 #pragma GCC diagnostic ignored "-Wwrite-strings"
 
-
 // function for weight binarization
 int binaryFun(float x){
     if (x>=0){
@@ -123,9 +122,7 @@ int readFCweights(char file_name[], int weight_length, int weight_position, int 
 
     for (int i=0; i<weight_length; i++){
         fread(&temp_c,sizeof(temp_c), 1, fp);
-        // FCWeightVector[i] = temp_c;
         FCWeightVector[i] = binaryFun(temp_c);
-        
 
         fseek(fp,4*jump_num,SEEK_CUR);
     }
@@ -775,7 +772,14 @@ void DenseLayer(int output_node_num, char weight_file[], char bias_file[]){
 
 int main(){
 
-    int img_position = 1;
+    int test_num = 3;
+    int img_index;
+    float accuracy=0;
+    int correct_count=0;
+    for (img_index=0; img_index<test_num; img_index++){
+
+
+    int img_position = img_index+1;
    // read cifar data from binary file
 
     unsigned char buffer[3073];
@@ -867,9 +871,9 @@ int main(){
     ImageMap.valid_dim_2=IMAGE_ROW;
     ImageMap.valid_dim_3=IMAGE_COL;
 
-    printf("Input of cifar-10 image, the size of ImageMap is :\n");
-    printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
-    printf("\n");
+    // printf("Input of cifar-10 image, the size of ImageMap is :\n");
+    // printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
+    // printf("\n");
 
 
 
@@ -881,9 +885,9 @@ int main(){
     // void Conv2DLayer(int kernel_size, int num_kernel, int pad, int binary=0)
     // Conv2DLayer(3, 128, 1);
     Conv2DLayer(3, 128, 1,  "arr_0", "arr_1");
-    printf("2D Convolutional layer, with 128 3*3 kernels, the size of ImageMap is :\n");
-    printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
-    printf("\n");
+    // printf("2D Convolutional layer, with 128 3*3 kernels, the size of ImageMap is :\n");
+    // printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
+    // printf("\n");
 
     
 
@@ -893,26 +897,20 @@ int main(){
     ActivationLayer('c', 't');
 
 
-    // printf("%ld\n",sizeof(buffer));
-    // printf("%d\t",buffer[0]);
-    // printf("%u\t",buffer[0]);
-    // printf("%d\t",buffer[1]);
-    // printf("%u\t",buffer[1]);
-
 
     Conv2DLayer(3, 128, 1,  "arr_6", "arr_7");
-    printf("2D Convolutional layer, with 128 3*3 kernels, the size of ImageMap is :\n");
-    printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
-    printf("\n");
+    // printf("2D Convolutional layer, with 128 3*3 kernels, the size of ImageMap is :\n");
+    // printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
+    // printf("\n");
 
     
 
 
 
     MaxPooling(2);
-    printf("Max-pooling layer, with 2*2 pooling size, the size of ImageMap is :\n");
-    printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
-    printf("\n");
+    // printf("Max-pooling layer, with 2*2 pooling size, the size of ImageMap is :\n");
+    // printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
+    // printf("\n");
 
     BatchNormLayer( 128, 'C', "arr_8", "arr_9", "arr_10", "arr_11");
 
@@ -926,9 +924,9 @@ int main(){
     printf("\n"); 
 
     Conv2DLayer(3, 256, 1,  "arr_12", "arr_13");
-    printf("2D Convolutional layer, with 256 3*3 kernels, the size of ImageMap is :\n");
-    printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
-    printf("\n");
+    // printf("2D Convolutional layer, with 256 3*3 kernels, the size of ImageMap is :\n");
+    // printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
+    // printf("\n");
 
     BatchNormLayer(256, 'C', "arr_14", "arr_15", "arr_16", "arr_17");
 
@@ -936,14 +934,14 @@ int main(){
 
 
     Conv2DLayer(3, 256, 1,  "arr_18", "arr_19");
-    printf("2D Convolutional layer, with 256 3*3 kernels, the size of ImageMap is :\n");
-    printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
-    printf("\n");
+    // printf("2D Convolutional layer, with 256 3*3 kernels, the size of ImageMap is :\n");
+    // printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
+    // printf("\n");
 
     MaxPooling(2);
-    printf("Max-pooling layer, with 2*2 pooling size, the size of ImageMap is :\n");
-    printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
-    printf("\n");
+    // printf("Max-pooling layer, with 2*2 pooling size, the size of ImageMap is :\n");
+    // printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
+    // printf("\n");
 
     BatchNormLayer( 256, 'C', "arr_20", "arr_21", "arr_22", "arr_23");
 
@@ -951,12 +949,12 @@ int main(){
 
 
     // # 512C3-512C3-P2  
-    printf("\n");    
+    // printf("\n");    
 
     Conv2DLayer(3, 512, 1,  "arr_24", "arr_25");
-    printf("2D Convolutional layer, with 512 3*3 kernels, the size of ImageMap is :\n");
-    printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
-    printf("\n");
+    // printf("2D Convolutional layer, with 512 3*3 kernels, the size of ImageMap is :\n");
+    // printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
+    // printf("\n");
 
     BatchNormLayer(512, 'C', "arr_26", "arr_27", "arr_28", "arr_29");
 
@@ -964,47 +962,36 @@ int main(){
 
 
     Conv2DLayer(3, 512, 1,  "arr_30", "arr_31");
-    printf("2D Convolutional layer, with 512 3*3 kernels, the size of ImageMap is :\n");
-    printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
-    printf("\n");
+    // printf("2D Convolutional layer, with 512 3*3 kernels, the size of ImageMap is :\n");
+    // printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
+    // printf("\n");
 
     MaxPooling(2);
-    printf("Max-pooling layer, with 2*2 pooling size, the size of ImageMap is  :\n");
-    printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
-    printf("\n");
+    // printf("Max-pooling layer, with 2*2 pooling size, the size of ImageMap is  :\n");
+    // printf("%d\t%d\t%d\t",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
+    // printf("\n");
 
     BatchNormLayer( 512, 'C', "arr_32", "arr_33", "arr_34", "arr_35");
 
     ActivationLayer('c', 't');
-
-    // printf("%d\t%d\t%d\n",ImageMap.valid_dim_1,ImageMap.valid_dim_2,ImageMap.valid_dim_3);
-    // for(int i=0; i<3; i++){
-    //     for(int j=0; j<ImageMap.valid_dim_2; j++){
-    //         for(int k=0; k<ImageMap.valid_dim_3; k++){
-    //             printf("%.4f\t", ImageMap.mapping_values[i][j][k]);
-    //         }
-    //         printf("\n");
-    //     }
-    //      printf("\n\n\n");
-    // }
 
 
     
 
 
     ResizeMapping2List();
-    printf("Resize the ImageMap to 1D array NNlayer, the size of NeuralNet-Layer is :\n");
-    printf("%d",NNLayer.valid_list_index);
-    printf("\n");
+    // printf("Resize the ImageMap to 1D array NNlayer, the size of NeuralNet-Layer is :\n");
+    // printf("%d",NNLayer.valid_list_index);
+    // printf("\n");
 
 
     // # 1024FP-1024FP-10FP     
-    printf("\n");
+    // printf("\n");
     DenseLayer(1024, "arr_36", "arr_37");
     // DenseLayer(1024);
-    printf("Fully Connected Layer with 1024 neurons, the size of NeuralNet-Layer is :\n");
-    printf("%d",NNLayer.valid_list_index);
-    printf("\n");
+    // printf("Fully Connected Layer with 1024 neurons, the size of NeuralNet-Layer is :\n");
+    // printf("%d",NNLayer.valid_list_index);
+    // printf("\n");
 
     // for(int k=0; k<NNLayer.valid_list_index; k++){
     //     printf("%.4f\t", NNLayer.list_values[k]);
@@ -1018,9 +1005,9 @@ int main(){
 
 
     DenseLayer(1024, "arr_42", "arr_43");
-    printf("Fully Connected Layer with 1024 neurons, the size of NeuralNet-Layer is :\n");
-    printf("%d",NNLayer.valid_list_index);
-    printf("\n");
+    // printf("Fully Connected Layer with 1024 neurons, the size of NeuralNet-Layer is :\n");
+    // printf("%d",NNLayer.valid_list_index);
+    // printf("\n");
 
     BatchNormLayer(1024, 'F', "arr_44", "arr_45", "arr_46", "arr_47");
 
@@ -1028,13 +1015,13 @@ int main(){
 
 
     DenseLayer(10, "arr_48", "arr_49");
-    printf("Fully Connected Layer with 10 neurons, the size of NeuralNet-Layer is :\n");
-    printf("%d",NNLayer.valid_list_index);
-    printf("\n");
+    // printf("Fully Connected Layer with 10 neurons, the size of NeuralNet-Layer is :\n");
+    // printf("%d",NNLayer.valid_list_index);
+    // printf("\n");
     BatchNormLayer(10, 'F', "arr_50", "arr_51", "arr_52", "arr_53");
 
 
-    printf("\n\n\n");
+    // printf("\n\n\n");
     int max_ind=1;
     float max_value=NNLayer.list_values[0];
     for (int i=0; i<10; i++){
@@ -1042,12 +1029,21 @@ int main(){
             max_ind = i;
             max_value =NNLayer.list_values[i];
         }
-        printf("%.5f\t", NNLayer.list_values[i]);
+        // printf("%.5f\t", NNLayer.list_values[i]);
     }
     printf("\nthe estimated label is : %d \n", max_ind);
     printf("the label of example image is :%d\n",img_eg.label_img);
 
-    
+    printf("count +1: %d\n",correct_count);
+    if (max_ind == img_eg.label_img){
+        correct_count++;
+        
+    }
+       
+    accuracy = correct_count/(img_index+1.0);
+    printf("accuracy: %.3f\n", accuracy);
+
+    }
     return 0;
 }
 
