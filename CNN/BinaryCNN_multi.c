@@ -1,7 +1,4 @@
-// we set all images/kernels value to float type
-// in binary implementation, they should have only binary values.
-// due to memory limitation, we read the weights of a single neuron
-// from file every time we use them
+// gcc BinaryCNN.c -o a.out -lm -std=c99
 
 
 #include <stdio.h>
@@ -180,15 +177,6 @@ struct conv_kernel LoadKernel(int ker_size, int ker_depth, int kernel_position, 
     return set_kernel;
 }
 
-
-// function for loading bias (both for convolution and for weights)
-float LoadBias(int init_bias=1){
-	float bias;
-	if (init_bias){
-		bias=getRand();
-	}	
-	return bias;
-}
 
 
 
@@ -435,7 +423,7 @@ void MaxPooling(int pool_size){
 
 
 // to implemet activation for every entry after convolution
-void ActivationLayer(char layer_type,char activation, int binary=0){
+void ActivationLayer(char layer_type,char activation){
 
     switch (layer_type){
 
@@ -453,18 +441,9 @@ void ActivationLayer(char layer_type,char activation, int binary=0){
                         switch (activation){
                             case 't': 
                             // hyper tangent function 
-                                if (binary){
-                                    printf("write binary activation function here");
-                                    // ImageMap.mapping_values[dim][i][j]=( 2.0 / ( 1 + exp( temp ) ) ) - 1;
-                                    ImageMap.mapping_values[dim][i][j] = binary_tanh_unit(temp);
 
-                                }
-                                else{
-
-                                    // ImageMap.mapping_values[dim][i][j]=( 2.0 / ( 1 + exp( temp ) ) ) - 1;
-                                    // printf("%.5f",ImageMap.mapping_values[dim][i][j]);
                                     ImageMap.mapping_values[dim][i][j] = binary_tanh_unit(temp);
-                                }
+                                
                                 break;
                             default:
                                 break;
@@ -486,13 +465,8 @@ void ActivationLayer(char layer_type,char activation, int binary=0){
                 switch (activation){
                     case 't': 
                     // hyper tangent function 
-                        if (binary){
-                            printf("write binary activation function here");
                             NNLayer.list_values[j] = binary_tanh_unit(temp);
-                        }
-                        else{
-                            NNLayer.list_values[j] = binary_tanh_unit(temp);
-                        }
+                        
                         break;
                     default:
                         break;
