@@ -1,8 +1,8 @@
 README
 
 To run:
-gcc main.c BinaryMLP.c math-binary.c -o main.o -lm
-./main.o
+gcc main.c BinaryMLP.c math-binary.c -o main -lm
+./main
 
 
 Details:
