@@ -1,0 +1,13 @@
+Reduced BNN:
+
+Reduce FC layer; (1024-1024-10 to 128-10)
+Delete all bias; (for both FC and CONV layers)
+
+Performance on cifar-10 Testing dataset:
+Error rate:
+
+11.99% (1199 of 10000)
+original BNN: about 11.5%
+
+parameter size: about 5.9M bits
+
