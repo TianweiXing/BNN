@@ -1,0 +1,8 @@
+Params and Data
+
+To obtain the cifar10 data, run get_data.sh or visit the cifar10
+website and get the binary data. Then unzip all the files into
+the current directory.
+
+To get the params, unzip cifar10_parameters.zip from the Params
+folder into the current directory.

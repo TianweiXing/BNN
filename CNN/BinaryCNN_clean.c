@@ -6,6 +6,9 @@
 #include <time.h>
 #pragma GCC diagnostic ignored "-Wwrite-strings"
 
+// define input images numbers
+#define IMAGE_NUM 1
+
 // #######################################################################################
 // All relevant math operation
 // function for weight binarization
@@ -63,8 +66,7 @@ float getRand(){
 
 
 // #######################################################################################
-// define input images numbers
-#define IMAGE_NUM 1
+
 // definition of image input size
 // image_dimension repressent the 3 dimensional RGB value
 #define IMAGE_ROW 32
@@ -756,13 +758,13 @@ int main(){
         unsigned char buffer[3073];
         FILE *ptr;
         ptr = fopen("test_batch.bin","rb");  // r for read, b for binary
-        fseek(ptr, sizeof(buffer)*(img_position-1),SEEK_CUR); // go to the position of specific image
+        fseek(ptr, sizeof(buffer)*(img_position),SEEK_CUR); // go to the position of specific image
         fread(buffer,sizeof(buffer),1,ptr); 
 
         // save cifar data to image structure
         struct cifar_img img_eg;
         img_eg.label_img=buffer[0];
-        printf("the label of example image is :%d\n",img_eg.label_img);
+        printf("The %d-th image: \n",(img_index+1));
         
         unsigned char zero='0';
         int temp_pixel;
@@ -857,14 +859,14 @@ int main(){
                 max_value =NNLayer.list_values[i];
             }
         }
-        printf("The estimated label/ actual label is : %d\t %d \n", max_ind, img_eg.label_img);
+        printf("\nThe estimated label/ actual label is : %d  / %d \n", max_ind, img_eg.label_img);
 
         // counter update, to calculate the accuracy
         if (max_ind == img_eg.label_img){
             correct_count++;
             
         }
-        printf("at %d image, count: %d\n", (img_index+1), correct_count);
+        printf("at %d image, correct count: %d\n", (img_index+1), correct_count);
         accuracy = correct_count/(img_index+1.0);
         printf("accuracy: %.3f\n\n", accuracy);
     }

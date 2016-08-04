@@ -6,3 +6,21 @@ the current directory.
 
 To get the params, unzip cifar10_parameters.zip from the Params
 folder into the current directory.
+Use npz2zip.py to convert the .npz file to .zip file (includes 54 binary weights value files)
+
+
+
+Working environment:
+Folder should include test_batch.bin(testing data, from cifar10), 54 binary weights files(arr_0 to arr_53), and BNN codes.
+
+BinaryCNN, BinaryCNN_muti load data every time inferencing an image.
+BinaryCNN_init_load, BinaryCNN_init_load_multi load data only in initialization step.
+(initialization takes about 10s, then inference taks about 5-7s per image)
+BinaryCNN_clean is a cleaned version of  BinaryCNN_init_load_multi.
+
+binary_net.py and cifar10.py is the py code for generate BNN model.
+cifar10_inference.py is py code for testing the BNN model. (unable to work with all 10000 testing images together on some machines with limited memroy, maybe 1000 is ok)
+
+binary_ops.py
+get_data.sh is for downloading the cifar10
+loadModel.py
