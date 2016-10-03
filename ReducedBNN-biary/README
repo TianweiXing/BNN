@@ -1,0 +1,14 @@
+Modification based on Reduced BNN:
+
+change activation:
+from tanh to sigmoid
+
+Performance on cifar-10 Testing dataset:
+Error rate:
+
+12.28% (1228 of 10000) 			----binary values 0 and +1
+original BNN: about 11.5%		----values +1, -1 and 0
+original reducedBNN: about 11.99%	----values +1, -1 and 0
+
+parameter size: about 5.9M bits
+
