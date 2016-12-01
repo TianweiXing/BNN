@@ -9,10 +9,14 @@ np.random.seed(1234) # for reproducibility?
 # specifying the gpu to use
 # import theano.sandbox.cuda
 # theano.sandbox.cuda.use('gpu1') 
+
+import lasagne
+
 import theano
 import theano.tensor as T
 
-import lasagne
+#import lasagne
+# change the order of lasagne importing
 
 import cPickle as pickle
 import gzip
@@ -20,9 +24,7 @@ import gzip
 #import binary_ops
 import binary_net
 
-from pylearn2.datasets.cifar10single import CIFAR10 	# testing img No.1		
-#from pylearn2.datasets.cifar10s import CIFAR10 	# testing img No.1-5000
-#from pylearn2.datasets.cifar10 import CIFAR10		# original cifar10 testing, memory not enough
+from pylearn2.datasets.cifar10s import CIFAR10 
 
 from collections import OrderedDict
 
@@ -59,9 +61,7 @@ if __name__ == "__main__":
     
     print('Loading CIFAR-10 dataset...')
     
-    #test_set = CIFAR10(which_set="test", start=5000,stop = 10000)
-    #test_set = CIFAR10(which_set="test", start=0,stop = 5000)
-    test_set = CIFAR10(which_set="test", start=0,stop = 1)
+    test_set = CIFAR10(which_set="test", start=0,stop = 5000)
     #test_set = CIFAR10(which_set="test")
         
     # bc01 format
@@ -103,7 +103,8 @@ if __name__ == "__main__":
             num_filters=128, 
             filter_size=(3, 3),
             pad=0,
-            nonlinearity=lasagne.nonlinearities.identity)
+            nonlinearity=lasagne.nonlinearities.identity,
+	    b=None)
     
     layer_afterconv = lasagne.layers.get_output(cnn, deterministic=True)   
     
@@ -127,7 +128,8 @@ if __name__ == "__main__":
             num_filters=128, 
             filter_size=(3, 3),
             pad=0,
-            nonlinearity=lasagne.nonlinearities.identity)
+            nonlinearity=lasagne.nonlinearities.identity,
+	    b=None)
     
     cnn = lasagne.layers.MaxPool2DLayer(cnn, pool_size=(2, 2))
     
@@ -152,7 +154,8 @@ if __name__ == "__main__":
             num_filters=256, 
             filter_size=(3, 3),
             pad=0,
-            nonlinearity=lasagne.nonlinearities.identity)
+            nonlinearity=lasagne.nonlinearities.identity,
+	    b=None)
     
     cnn = lasagne.layers.BatchNormLayer(
             cnn,
@@ -174,7 +177,8 @@ if __name__ == "__main__":
             num_filters=256, 
             filter_size=(3, 3),
             pad=0,
-            nonlinearity=lasagne.nonlinearities.identity)
+            nonlinearity=lasagne.nonlinearities.identity,
+	    b=None)
     
     cnn = lasagne.layers.MaxPool2DLayer(cnn, pool_size=(2, 2))
     
@@ -199,7 +203,8 @@ if __name__ == "__main__":
             num_filters=512, 
             filter_size=(3, 3),
             pad=0,
-            nonlinearity=lasagne.nonlinearities.identity)
+            nonlinearity=lasagne.nonlinearities.identity,
+	    b=None)
     
     cnn = lasagne.layers.BatchNormLayer(
             cnn,
@@ -221,7 +226,8 @@ if __name__ == "__main__":
             num_filters=512, 
             filter_size=(3, 3),
             pad=0,
-            nonlinearity=lasagne.nonlinearities.identity)
+            nonlinearity=lasagne.nonlinearities.identity,
+	    b=None)
     
     cnn = lasagne.layers.MaxPool2DLayer(cnn, pool_size=(2, 2))
     
@@ -244,7 +250,8 @@ if __name__ == "__main__":
                 H=H,
                 W_LR_scale=W_LR_scale,
                 nonlinearity=lasagne.nonlinearities.identity,
-                num_units=1024)      
+                num_units=1024,
+	        b=None) 
                   
     cnn = lasagne.layers.BatchNormLayer(
             cnn,
@@ -262,7 +269,8 @@ if __name__ == "__main__":
                 H=H,
                 W_LR_scale=W_LR_scale,
                 nonlinearity=lasagne.nonlinearities.identity,
-                num_units=1024)      
+                num_units=1024,
+	        b=None)
                   
     cnn = lasagne.layers.BatchNormLayer(
             cnn,
@@ -280,7 +288,8 @@ if __name__ == "__main__":
                 H=H,
                 W_LR_scale=W_LR_scale,
                 nonlinearity=lasagne.nonlinearities.identity,
-                num_units=10)      
+                num_units=10,
+	        b=None) 
                   
     cnn = lasagne.layers.BatchNormLayer(
             cnn,
@@ -298,7 +307,6 @@ if __name__ == "__main__":
     observe_fn0 = theano.function([input], layer_beforepad)   
     observe_fn1 = theano.function([input], layer_afterpad)  
     observe_fn2 = theano.function([input], layer_afterconv)  
-    observe_fnz = theano.function([input], test_output)  
 
 
     print("Loading the trained parameters and binarizing the weights...")
@@ -340,9 +348,5 @@ if __name__ == "__main__":
     
     observe_target1=observe_fn1(test_set.X)
     print observe_target1[0,0,:,:]
-
-
-    print observe_fnz(test_set.X).shape
-    print observe_fnz(test_set.X)
 
 
